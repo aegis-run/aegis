@@ -6,26 +6,22 @@ changelog:
       - dependabot
   categories:
     - title: "⚠️ Breaking Changes"
-      labels:
-        - breaking
+      labels: [breaking]
+
     - title: "✨ Features"
-      labels:
-        - enhancement
-        - feature
+      labels: [enhancement, feature]
+
     - title: "🐛 Bug Fixes"
-      labels:
-        - bug
-        - fix
+      labels: [bug, fix]
+
     - title: "🔒 Security"
-      labels:
-        - security
-        - vulnerability
+      labels: [security, vulnerability]
+
     - title: "🏗️ Infrastructure"
-      labels:
-        - nix
-        - ci
-        - docker
+      labels: [nix, ci, docker]
+
     - title: "🧹 Housekeeping"
-      labels:
-        - chore
-        - dependencies
+      labels: [chore, dependencies]
+
+    - title: "Other Changes"
+      labels: []

@@ -5,12 +5,21 @@
   };
 
   outputs =
-    inputs:
+    { self, ... }@inputs:
     inputs.flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import inputs.nixpkgs { inherit system; };
-        version = "0.0.0";
+
+        # version = if self ? rev then builtins.substring 0 7 self.rev else "dirty";
+        version =
+          if self ? rev && self ? ref then
+            let
+              tag = builtins.replaceStrings [ "refs/tags/" ] [ "" ] self.ref;
+            in
+            if builtins.match "v.*" tag != null then tag else builtins.substring 0 7 self.rev
+          else
+            "dirty";
 
         toolchain = import ./nix/go.nix { inherit pkgs; };
         go = toolchain.go;
@@ -24,21 +33,17 @@
 
       in
       {
-        devShells = {
-          default = toolchain.devShell;
-        };
+        devShells.default = toolchain.devShell;
 
         packages = {
           default = aegis;
           inherit aegis docker;
         };
 
-        apps = {
-          default = {
-            type = "app";
-            program = "${aegis}/bin/aegis";
-            meta = aegis.meta;
-          };
+        apps.default = {
+          type = "app";
+          program = "${aegis}/bin/aegis";
+          meta = aegis.meta;
         };
 
         checks = checks;
