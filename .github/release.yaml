@@ -1,0 +1,31 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+  categories:
+    - title: "⚠️ Breaking Changes"
+      labels:
+        - breaking
+    - title: "✨ Features"
+      labels:
+        - enhancement
+        - feature
+    - title: "🐛 Bug Fixes"
+      labels:
+        - bug
+        - fix
+    - title: "🔒 Security"
+      labels:
+        - security
+        - vulnerability
+    - title: "🏗️ Infrastructure"
+      labels:
+        - nix
+        - ci
+        - docker
+    - title: "🧹 Housekeeping"
+      labels:
+        - chore
+        - dependencies
