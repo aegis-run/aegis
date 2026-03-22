@@ -86,6 +86,7 @@ build-target goos goarch:
         -o bin/aegis-{{ goos }}-{{ goarch }} \
         ./cmd/aegis
 
+# Release build
 [group("build")]
 build-release:
     CGO_ENABLED=0 \
@@ -129,25 +130,18 @@ docker-push tag:
 # Release                                                              #
 # ------------------------------------------------------------------ #
 
-# Bump version across flake.nix (e.g. just bump 0.2.0)
+# Bump version in flake.nix — prefer triggering bump.yaml via gh instead
 [group("release")]
 bump version:
     sed -i 's/version = "[^"]*"/version = "{{ version }}"/' flake.nix
     @echo "✓ Bumped to {{ version }}"
 
-# Tag and push a release (e.g. just release 0.2.0)
+# Tag and push — run after bump PR is merged
 [group("release")]
 release version:
     git tag -a "v{{ version }}" -m "Release v{{ version }}"
     git push origin "v{{ version }}"
     @echo "✓ Tagged and pushed v{{ version }}"
-
-# Build release and create tag
-[group("release")]
-publish version:
-    @just build-release
-    @just release {{ version }}
-    @echo "✓ Release {{ version }} published"
 
 # ------------------------------------------------------------------ #
 # Dependency management                                                #
