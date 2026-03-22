@@ -3,7 +3,8 @@ changelog:
     labels:
       - ignore-for-release
     authors:
-      - dependabot
+      - rizesql
+      - github-actions[bot]
   categories:
     - title: "⚠️ Breaking Changes"
       labels: [breaking]
@@ -24,4 +25,4 @@ changelog:
       labels: [chore, dependencies]
 
     - title: "Other Changes"
-      labels: []
+      labels: ["*"]
