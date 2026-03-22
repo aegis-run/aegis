@@ -15,11 +15,25 @@
         toolchain = import ./nix/go.nix { inherit pkgs; };
         go = toolchain.go;
 
+        aegis = import ./nix/aegis.nix { inherit pkgs go version; };
+        docker = import ./nix/docker.nix { inherit pkgs aegis; };
 
       in
       {
         devShells = {
           default = toolchain.devShell;
+        };
+
+        packages = {
+          default = aegis;
+          inherit aegis docker;
+        };
+
+        apps = {
+          default = {
+            type = "app";
+            program = "${aegis}/bin/aegis";
+          };
         };
 
       }
