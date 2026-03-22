@@ -2,10 +2,12 @@
 pkgs.dockerTools.buildLayeredImage {
   name = "aegis";
   tag = aegis.version;
+
   contents = [
     pkgs.cacert
     aegis
   ];
+
   config = {
     Entrypoint = [ "/bin/aegis" ];
     ExposedPorts = {
