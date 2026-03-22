@@ -37,6 +37,7 @@
           default = {
             type = "app";
             program = "${aegis}/bin/aegis";
+            meta = aegis.meta;
           };
         };
 

@@ -56,21 +56,6 @@ in
         touch $out
       '';
 
-  vuln =
-    pkgs.runCommand "aegis-vuln"
-      {
-        buildInputs = [
-          pkgs.govulncheck
-          go
-        ];
-      }
-      ''
-        ${goEnv}
-        cd ${cleanSrc}
-        govulncheck ./...
-        touch $out
-      '';
-
   sec =
     pkgs.runCommand "aegis-sec"
       {
