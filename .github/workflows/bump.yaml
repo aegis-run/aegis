@@ -1,0 +1,36 @@
+name: Bump version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to bump to (e.g. 0.2.0)"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Bump version to ${{ github.event.inputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Bump version in flake.nix
+        run: nix develop --command just bump ${{ github.event.inputs.version }}
+
+      - uses: peter-evans/create-pull-request@v8
+        with:
+          sign-commits: true
+          commit-message: "chore: bump version to ${{ github.event.inputs.version }}"
+          title: "chore: bump version to ${{ github.event.inputs.version }}"
+          body: |
+            Automated version bump to `${{ github.event.inputs.version }}`.
+
+          branch: "automation/bump-${{ github.event.inputs.version }}"
+          delete-branch: true
+          labels: ignore-for-release
