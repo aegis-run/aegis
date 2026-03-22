@@ -15,14 +15,15 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        target:
-          - x86_64-linux
-          - aarch64-linux
-          - aarch64-darwin
+        include:
+          - os: ubuntu-latest
+            target: x86_64-linux
+          - os: macos-latest
+            target: aarch64-darwin
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v6
