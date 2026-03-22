@@ -24,14 +24,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-flake-${{ hashFiles('flake.lock') }}
-          upload-chunk-size: 268435456
-          gc-max-store-size-linux: 2147483648
-          purge: true
-          purge-created: 0
+      - uses: ./.github/actions/setup-nix
 
       - run: nix flake check --print-build-logs
       - run: nix develop --command go test -race ./...
@@ -42,14 +35,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-flake-${{ hashFiles('flake.lock') }}
-          upload-chunk-size: 268435456
-          gc-max-store-size-linux: 2147483648
-          purge: true
-          purge-created: 0
+      - uses: ./.github/actions/setup-nix
 
       - run: nix build .#docker
 
