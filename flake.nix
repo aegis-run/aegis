@@ -10,7 +10,7 @@
       system:
       let
         pkgs = import inputs.nixpkgs { inherit system; };
-        version = "0.0.1";
+        version = "0.0.0";
 
         toolchain = import ./nix/go.nix { inherit pkgs; };
         go = toolchain.go;
