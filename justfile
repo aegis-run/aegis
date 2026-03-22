@@ -77,23 +77,6 @@ security: vuln sast
 build:
     go build -o bin/ ./...
 
-# Cross-compile for a specific target
-[group("build")]
-build-target goos goarch:
-    CGO_ENABLED=0 GOOS={{ goos }} GOARCH={{ goarch }} \
-        go build \
-        -ldflags="-s -w -X main.version=$(git describe --tags --always)" \
-        -o bin/aegis-{{ goos }}-{{ goarch }} \
-        ./cmd/aegis
-
-# Release build
-[group("build")]
-build-release:
-    CGO_ENABLED=0 \
-        go build \
-        -ldflags="-s -w -X main.version=$(git describe --tags --always)" \
-        -o bin/ ./...
-
 # Install globally
 [group("build")]
 install:
@@ -118,23 +101,9 @@ docker-load: docker-build
 docker-run:
     docker run --rm -p 8080:8080 aegis:latest
 
-# Push to GHCR (used by CI, requires prior docker login)
-[group("docker")]
-docker-push tag:
-    docker tag aegis:{{ tag }} ghcr.io/aegis-run/aegis:{{ tag }}
-    docker tag aegis:{{ tag }} ghcr.io/aegis-run/aegis:latest
-    docker push ghcr.io/aegis-run/aegis:{{ tag }}
-    docker push ghcr.io/aegis-run/aegis:latest
-
 # ------------------------------------------------------------------ #
 # Release                                                              #
 # ------------------------------------------------------------------ #
-
-# Bump version in flake.nix — prefer triggering bump.yaml via gh instead
-[group("release")]
-bump version:
-    sed -i 's/version = "[^"]*"/version = "{{ version }}"/' flake.nix
-    @echo "✓ Bumped to {{ version }}"
 
 # Tag and push — run after bump PR is merged
 [group("release")]
@@ -157,11 +126,6 @@ mod-tidy:
 mod-verify:
     go mod verify
 
-# Show outdated dependencies
-[group("dependency management")]
-outdated:
-    go list -u -m all | grep '\['
-
 # Download all dependencies
 [group("dependency management")]
 mod-download:
@@ -173,7 +137,7 @@ mod-download:
 
 # Run the full CI pipeline locally
 [group("ci")]
-ci: check test security
+ci: check test-race security
     @echo "✓ CI pipeline passed"
 
 # Run nix flake checks
