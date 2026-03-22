@@ -37,12 +37,13 @@
           default = {
             type = "app";
             program = "${aegis}/bin/aegis";
+            meta = aegis.meta;
           };
         };
 
         checks = checks;
 
-        formatter = pkgs.nixfmt-rfc-style;
+        formatter = pkgs.nixfmt;
       }
     );
 }

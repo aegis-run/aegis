@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: arm64
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build binary
+        run: nix develop --command just build-target ${{ matrix.goos }} ${{ matrix.goarch }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aegis-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: bin/aegis-${{ matrix.goos }}-${{ matrix.goarch }}
+          retention-days: 1
+
+  docker:
+    name: Publish Docker image
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: nix develop --command just docker-load
+      - run: nix develop --command just docker-push ${{ github.ref_name }}
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build, docker]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: aegis-*
+          merge-multiple: true
+          path: ./bin
+      - name: Checksum
+        run: |
+          cd bin
+          sha256sum aegis-* > checksums.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./bin/aegis-*
+            ./bin/checksums.txt
+          generate_release_notes: true
+          fail_on_unmatched_files: true

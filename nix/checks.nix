@@ -5,6 +5,17 @@
 }:
 let
   cleanSrc = pkgs.lib.cleanSource src;
+
+  goEnv = ''
+    export HOME=$TMPDIR
+    export XDG_CACHE_HOME=$TMPDIR
+
+    export GOCACHE=$TMPDIR/go-cache
+    export GOMODCACHE=$TMPDIR/go-mod
+    export GOPATH=$TMPDIR/go
+
+    export GOLANGCI_LINT_CACHE=$TMPDIR/golangci-lint
+  '';
 in
 {
   tests = pkgs.buildGoModule.override { inherit go; } {
@@ -24,6 +35,7 @@ in
         ];
       }
       ''
+        ${goEnv}
         cd ${cleanSrc}
         golangci-lint run ./...
         touch $out
@@ -35,21 +47,12 @@ in
         buildInputs = [ go ];
       }
       ''
-        diff <(gofmt -l ${cleanSrc}) <(echo -n "")
-        touch $out
-      '';
-
-  vuln =
-    pkgs.runCommand "aegis-vuln"
-      {
-        buildInputs = [
-          pkgs.govulncheck
-          go
-        ];
-      }
-      ''
-        cd ${cleanSrc}
-        govulncheck ./...
+        ${goEnv}
+        if [ -n "$(gofmt -l ${cleanSrc})" ]; then
+          echo "Code is not formatted"
+          gofmt -l ${cleanSrc}
+          exit 1
+        fi
         touch $out
       '';
 
@@ -62,6 +65,7 @@ in
         ];
       }
       ''
+        ${goEnv}
         cd ${cleanSrc}
         gosec ./...
         touch $out
