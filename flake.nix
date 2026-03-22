@@ -15,6 +15,12 @@
         toolchain = import ./nix/go.nix { inherit pkgs; };
         go = toolchain.go;
 
+        aegis = import ./nix/aegis.nix { inherit pkgs go version; };
+        docker = import ./nix/docker.nix { inherit pkgs aegis; };
+        checks = import ./nix/checks.nix {
+          inherit pkgs go;
+          src = ./.;
+        };
 
       in
       {
@@ -22,6 +28,21 @@
           default = toolchain.devShell;
         };
 
+        packages = {
+          default = aegis;
+          inherit aegis docker;
+        };
+
+        apps = {
+          default = {
+            type = "app";
+            program = "${aegis}/bin/aegis";
+          };
+        };
+
+        checks = checks;
+
+        formatter = pkgs.nixfmt-rfc-style;
       }
     );
 }
