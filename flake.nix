@@ -17,6 +17,10 @@
 
         aegis = import ./nix/aegis.nix { inherit pkgs go version; };
         docker = import ./nix/docker.nix { inherit pkgs aegis; };
+        checks = import ./nix/checks.nix {
+          inherit pkgs go;
+          src = ./.;
+        };
 
       in
       {
@@ -36,6 +40,9 @@
           };
         };
 
+        checks = checks;
+
+        formatter = pkgs.nixfmt-rfc-style;
       }
     );
 }
