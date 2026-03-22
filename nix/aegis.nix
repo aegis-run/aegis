@@ -10,8 +10,6 @@ pkgs.buildGoModule.override { inherit go; } {
 
   vendorHash = null;
 
-  CGO_ENABLED = 0;
-
   ldflags = [
     "-s"
     "-w"
