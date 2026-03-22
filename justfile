@@ -129,6 +129,12 @@ docker-push tag:
 # Release                                                              #
 # ------------------------------------------------------------------ #
 
+# Bump version across flake.nix (e.g. just bump 0.2.0)
+[group("release")]
+bump version:
+    sed -i 's/version = "[^"]*"/version = "{{ version }}"/' flake.nix
+    @echo "✓ Bumped to {{ version }}"
+
 # Tag and push a release (e.g. just release 0.2.0)
 [group("release")]
 release version:
