@@ -11,24 +11,28 @@
       let
         pkgs = import inputs.nixpkgs { inherit system; };
 
-        # version = if self ? rev then builtins.substring 0 7 self.rev else "dirty";
         version =
-          if self ? rev && self ? ref then
-            let
-              tag = builtins.replaceStrings [ "refs/tags/" ] [ "" ] self.ref;
-            in
-            if builtins.match "v.*" tag != null then tag else builtins.substring 0 7 self.rev
+          if self ? rev then
+            if self ? ref then
+              let
+                tag = builtins.replaceStrings [ "refs/tags/" ] [ "" ] self.ref;
+              in
+              if builtins.match "v[0-9].*" tag != null then tag else "v0.0.0-${builtins.substring 0 7 self.rev}"
+            else
+              "v0.0.0-${builtins.substring 0 7 self.rev}"
           else
-            "dirty";
+            "v0.0.0-dirty";
 
         toolchain = import ./nix/go.nix { inherit pkgs; };
         go = toolchain.go;
 
-        aegis = import ./nix/aegis.nix { inherit pkgs go version; };
-        docker = import ./nix/docker.nix { inherit pkgs aegis; };
-        checks = import ./nix/checks.nix {
-          inherit pkgs go;
-          src = ./.;
+        aegis = import ./nix/aegis.nix {
+          inherit
+            self
+            pkgs
+            go
+            version
+            ;
         };
 
       in
@@ -37,7 +41,7 @@
 
         packages = {
           default = aegis;
-          inherit aegis docker;
+          inherit aegis;
         };
 
         apps.default = {
@@ -45,8 +49,6 @@
           program = "${aegis}/bin/aegis";
           meta = aegis.meta;
         };
-
-        checks = checks;
 
         formatter = pkgs.nixfmt;
       }

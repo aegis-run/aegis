@@ -6,24 +6,43 @@ default:
     @just --list --unsorted
 
 # ------------------------------------------------------------------ #
+# Infrastructure                                                     #
+# ------------------------------------------------------------------ #
+
+# Start Postgres and Redis in the background
+[group("infrastructure")]
+up:
+    docker compose up -d
+
+# Stop and remove the database/cache containers
+[group("infrastructure")]
+down:
+    docker compose down
+
+# Destroy all local data (useful if you need a clean slate)
+[group("infrastructure")]
+nuke:
+    docker compose down -v
+
+# ------------------------------------------------------------------ #
 # Development                                                          #
 # ------------------------------------------------------------------ #
 
 # Run the server
 [group("development")]
-run:
+run: up
     go run ./cmd/aegis serve | hl -P
 
 # Format all code
 [group("development")]
 fmt:
-    goimports -w ./...
-    gofmt -w ./...
+    go tool goimports -w .
+    gofmt -w .
 
 # Check formatting without modifying files
 [group("development")]
 fmt-check:
-    test -z "$(gofmt -l ./...)"
+    @test -z "$(gofmt -l .)" || (echo "Code is not formatted. Run 'just fmt'" && exit 1)
 
 # Run linter
 [group("development")]
@@ -44,11 +63,40 @@ test *args:
 test-race *args:
     go test -race ./... {{ args }}
 
-# Run tests with coverage
+# Generate all code (OpenAPI, SQL, etc)
 [group("development")]
-test-cover:
-    go test -coverprofile=coverage.out ./...
-    go tool cover -html=coverage.out
+gen:
+    go generate ./...
+    rm pkg/db/postgres/delete_me.go
+
+# ------------------------------------------------------------------ #
+# Database                                                           #
+# ------------------------------------------------------------------ #
+
+db_dir := "pkg/database/postgres/migrations"
+db_url := env("AEGIS_DB_URI", "postgres://user:password@localhost:5432/aegis?sslmode=disable")
+db_schema := env("AEGIS_DB_SCHEMA_NAME", "public")
+db_table := env("AEGIS_DB_MIGRATIONS_TABLE", "aegis_schema_migrations")
+
+# Create a new migration file (Usage: just migrate create_users_table)
+[group("database")]
+migrate name:
+    go tool goose -dir {{ db_dir }} create {{ name }} sql
+
+# Check migration status internally securely navigating the namespace
+[group("database")]
+db-status:
+    go tool goose -table {{ db_table }} -dir {{ db_dir }} postgres "{{ db_url }}&search_path={{ db_schema }}" status
+
+# Rollback the last migration step cleanly
+[group("database")]
+db-down:
+    go tool goose -table {{ db_table }} -dir {{ db_dir }} postgres "{{ db_url }}&search_path={{ db_schema }}" down
+
+# Reset the isolated database components completely
+[group("database")]
+db-reset:
+    go tool goose -table {{ db_table }} -dir {{ db_dir }} postgres "{{ db_url }}&search_path={{ db_schema }}" down-to 0
 
 # ------------------------------------------------------------------ #
 # Security                                                             #
@@ -57,12 +105,12 @@ test-cover:
 # Run vulnerability check
 [group("security")]
 vuln:
-    govulncheck ./...
+    go tool govulncheck ./...
 
 # Run static application security testing
 [group("security")]
 sast:
-    gosec ./...
+    go tool gosec -exclude-generated ./...
 
 # Run all security checks
 [group("security")]
@@ -81,25 +129,6 @@ build:
 [group("build")]
 install:
     go install ./...
-
-# ------------------------------------------------------------------ #
-# Docker                                                               #
-# ------------------------------------------------------------------ #
-
-# Build the Docker image via Nix
-[group("docker")]
-docker-build:
-    nix build .#docker
-
-# Load the Nix-built Docker image into the local daemon
-[group("docker")]
-docker-load: docker-build
-    docker load < result
-
-# Run the container locally
-[group("docker")]
-docker-run:
-    docker run --rm -p 8080:8080 aegis:latest
 
 # ------------------------------------------------------------------ #
 # Release                                                              #
@@ -140,11 +169,6 @@ mod-download:
 ci: check test-race security
     @echo "✓ CI pipeline passed"
 
-# Run nix flake checks
-[group("ci")]
-nix-check:
-    nix flake check
-
 # ------------------------------------------------------------------ #
 # Housekeeping                                                         #
 # ------------------------------------------------------------------ #
@@ -167,9 +191,9 @@ clean-all: clean clean-cache
 # Print tool versions
 [group("misc")]
 versions:
-    @echo "go:             $(go version)"
-    @echo "gopls:          $(gopls version | head -1)"
-    @echo "golangci-lint:  $(golangci-lint version --short)"
-    @echo "gosec:          $(gosec --version 2>&1)"
-    @echo "govulncheck:    $(govulncheck -version)"
-    @echo "just:           $(just --version)"
+    @echo "go:            $(go version)"
+    @echo "gopls:         $(go tool gopls version | head -1)"
+    @echo "golangci-lint: $(golangci-lint version --short)"
+    @echo "gosec:         $(go tool gosec --version 2>&1)"
+    @echo "govulncheck:   $(go tool govulncheck -version)"
+    @echo "just:          $(just --version)"

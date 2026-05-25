@@ -1,0 +1,61 @@
+services:
+  clickstack:
+    image: clickhouse/clickstack-local:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8123:8123" # ClickHouse native
+      - "127.0.0.1:8081:8080" # HyperDX UI
+      - "127.0.0.1:4317:4317" # OTLP gRPC
+      - "127.0.0.1:4318:4318" # OTLP HTTP
+    volumes:
+      - aegis_clickstack_db:/data/db
+      - aegis_clickstack_ch_data:/var/lib/clickhouse
+      - aegis_clickstack_ch_logs:/var/log/clickhouse-server
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - aegis_backend
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "log_statement=ddl"
+      - "-c"
+      - "log_min_duration_statement=1000"
+      - "-c"
+      - "log_lock_waits=on"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: aegis
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - aegis_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d aegis"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - aegis_backend
+
+volumes:
+  aegis_pg_data:
+  # aegis_redis_data:
+  aegis_clickstack_db:
+  aegis_clickstack_ch_data:
+  aegis_clickstack_ch_logs:
+
+networks:
+  aegis_backend:
+    driver: bridge

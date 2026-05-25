@@ -4,125 +4,128 @@ run:
   timeout: 5m
   tests: true
 
+output:
+  sort-results: true
+
 linters:
-  default: standard
+  disable-all: true
   enable:
+    - govet
+    - staticcheck
     - errcheck
-    - goconst
-    - gocritic
-    - gosec
+    - errorlint
     - ineffassign
-    - misspell
-    - nakedret
-    - prealloc
+    - unused
+    - nilerr
+    - nilnil
+    - noctx
+    - contextcheck
+
     - revive
-    - unparam
+    - cyclop
+    - funlen
+    - nestif
+    - dupl
+
+    - prealloc
+    - makezero
+    - unconvert
+
+    - misspell
+    - whitespace
+    - lll
+    - goconst
+
+    - copyloopvar
+    - forcetypeassert
+    - exhaustive
+
   settings:
-    goconst:
-      min-len: 3
-      min-occurrences: 3
-    gocritic:
-      enabled-checks:
-        - appendCombine
-        - badLock
-        - badRegexp
-        - badSorting
-        - boolExprSimplify
-        - builtinShadow
-        - commentedOutCode
-        - commentedOutImport
-        - deferInLoop
-        - deferUnlambda
-        - docStub
-        - dupImport
-        - dynamicFmtString
-        - emptyDecl
-        - emptyFallthrough
-        - equalFold
-        - evalOrder
-        - exposedSyncMutex
-        - externalErrorReassign
-        - filepathJoin
-        - hexLiteral
-        - httpNoBody
-        - hugeParam
-        - importShadow
-        - indexAlloc
-        - initClause
-        - methodExprCall
-        - nestingReduce
-        - nilValReturn
-        - octalLiteral
-        - paramTypeCombine
-        - preferDecodeRune
-        - preferFilepathJoin
-        - preferFprint
-        - preferStringWriter
-        - preferWriteByte
-        - ptrToRefParam
-        - rangeExprCopy
-        - rangeValCopy
-        - redundantSprint
-        - regexpPattern
-        - regexpSimplify
-        - returnAfterHttpError
-        - sliceClear
-        - sloppyReassign
-        - sortSlice
-        - sprintfQuotedString
-        - sqlQuery
-        - stringConcatSimplify
-        - stringXbytes
-        - stringsCompare
-        - timeExprSimplify
-        - todoCommentWithoutDetail
-        - tooManyResultsChecker
-        - truncateCmp
-        - typeAssertChain
-        - typeDefFirst
-        - unlabelStmt
-        - unnecessaryBlock
-        - unnecessaryDefer
-        - weakCond
-        - whyNoLint
-        - yodaStyleExpr
+    govet:
+      enable-all: false
+
     revive:
+      severity: warning
       rules:
-        - name: blank-imports
-        - name: context-as-argument
-        - name: context-keys-type
-        - name: dot-imports
-        - name: error-return
-        - name: error-strings
-        - name: error-naming
-        - name: exported
-        - name: if-return
-        - name: increment-decrement
         - name: var-naming
-        - name: var-declaration
-        - name: package-comments
-        - name: range
-        - name: receiver-naming
-        - name: time-naming
-        - name: unexported-return
         - name: indent-error-flow
-        - name: errorf
-        - name: empty-block
-        - name: superfluous-else
+        - name: early-return
         - name: unused-parameter
         - name: unreachable-code
         - name: redefines-builtin-id
 
+    funlen:
+      lines: 70
+      statements: 40
+
+    lll:
+      line-length: 100
+
+    nestif:
+      min-complexity: 4
+
+    dupl:
+      threshold: 100
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    misspell:
+      locale: US
+
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: true
+
+    gofmt:
+      simplify: true
+
+    goimports:
+      local-prefixes: github.com/aegis-run/aegis
+
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (io.Writer).Write
+        - (*github.com/fatih/color.Color).Fprint
+        - (*github.com/fatih/color.Color).Fprintf
+        - (*github.com/fatih/color.Color).Fprintln
+
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+
+    wrapcheck:
+      ignoreSigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - funlen
+          - cyclop
+          - dupl
+
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - unparam
+
 issues:
-  exclude-use-default: false
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gosec
-        - unparam
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-use-default: false
 
 formatters:
   enable:

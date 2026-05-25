@@ -1,0 +1,25 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "./migrations"
+    queries: "./queries"
+    gen:
+      go:
+        package: "postgres"
+        out: "."
+        sql_package: "pgx/v5"
+        emit_db_tags: true
+        emit_interface: true
+        emit_sql_as_comment: true
+        emit_methods_with_db_argument: true
+        output_files_suffix: "_generated"
+        output_models_file_name: "generated_models"
+        output_querier_file_name: "generated_querier"
+        output_batch_file_name: "generated_batch"
+        output_copyfrom_file_name: "generated_copyfrom"
+        output_db_file_name: "delete_me"
+        overrides:
+          - db_type: "schema_hash"
+            go_type: "github.com/aegis-run/aegis/pkg/schema.Hash"
+          - db_type: "timestamptz"
+            go_type: "time.Time"

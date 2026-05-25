@@ -12,11 +12,10 @@
       gotools
       delve
       golangci-lint
-      govulncheck
-      gosec
 
       just
       hl-log-viewer
+      httpyac
     ];
 
     shellHook = ''

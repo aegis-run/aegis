@@ -1,0 +1,33 @@
+profiler:
+  enabled: true
+
+tracing:
+  enabled: true
+  exporter: otlp
+
+metrics:
+  enabled: true
+  exporter: otlp
+
+logs:
+  enabled: true
+  level: debug
+  format: json
+  exporters:
+    - type: stdout
+    - type: otlp
+      endpoint: localhost:4317
+      protocol: grpc
+      insecure: true
+
+datastore:
+  engine: postgres
+  uri: postgresql://user:password@localhost/aegis
+  auto_migrate: true
+
+authn:
+  enabled: true
+  method: psk
+  psk:
+    keys:
+      - aegis_XBHFNLxp9usfmbAuZtrD0Ajiace1HNfb/CpVLy3qcek=
