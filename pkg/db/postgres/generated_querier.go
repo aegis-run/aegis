@@ -7,15 +7,51 @@ package postgres
 import (
 	"context"
 
+	"github.com/aegis-run/aegis/pkg/db/postgres/types"
 	"github.com/aegis-run/aegis/pkg/schema"
 )
 
 type Querier interface {
+	//DeleteTuple
+	//
+	//  DELETE FROM "tuple"
+	//  WHERE resource_type = $1
+	//    AND resource_id = $2
+	//    AND relation = $3
+	//    AND subject_type = $4
+	//    AND subject_id = $5
+	//    AND subject_permission = $6
+	DeleteTuple(ctx context.Context, db DBTX, arg DeleteTupleParams) error
+	//FindTuples
+	//
+	//  SELECT pk, resource_type, resource_id, relation, subject_type, subject_id, subject_permission FROM "tuple"
+	//  WHERE (resource_type = $1 OR $1 = '')
+	//    AND (resource_id = $2 OR $2 = '')
+	//    AND (relation = $3 OR $3 = '')
+	//    AND (subject_type = $4 OR $4 = '')
+	//    AND (subject_id = $5 OR $5 = '')
+	//    AND (subject_permission = $6 OR $6 = '')
+	//    AND pk > $7
+	//  ORDER BY pk ASC
+	//  LIMIT $8
+	FindTuples(ctx context.Context, db DBTX, arg FindTuplesParams) ([]Tuple, error)
+	//FindTuplesByResourceBatch
+	//
+	//  SELECT pk, resource_type, resource_id, relation, subject_type, subject_id, subject_permission FROM "tuple"
+	//  WHERE relation = $1
+	//    AND resource_type = $2
+	//    AND resource_id = ANY($3::text[])
+	FindTuplesByResourceBatch(ctx context.Context, db DBTX, arg FindTuplesByResourceBatchParams) ([]Tuple, error)
+	//GetCurrentXactID
+	//
+	//  SELECT pg_current_xact_id()::xid8
+	GetCurrentXactID(ctx context.Context, db DBTX) (types.XID8, error)
 	//GetLatestSchemaVersion
 	//
 	//  SELECT
 	//    s.hash,
 	//    s.data,
+	//    s.written_at,
 	//    s.created_at
 	//  FROM "schema" s
 	//  ORDER BY s.pk DESC
@@ -26,10 +62,15 @@ type Querier interface {
 	//  SELECT
 	//    s.hash,
 	//    s.data,
+	//    s.written_at,
 	//    s.created_at
 	//  FROM "schema" s
 	//  WHERE s.hash = $1
 	GetSchemaVersionByHash(ctx context.Context, db DBTX, hash schema.Hash) (GetSchemaVersionByHashRow, error)
+	//GetSnapshotXmax
+	//
+	//  SELECT pg_snapshot_xmax(pg_current_snapshot())::xid8
+	GetSnapshotXmax(ctx context.Context, db DBTX) (types.XID8, error)
 	//InsertSchemaVersion
 	//
 	//  INSERT INTO "schema" (
@@ -38,8 +79,25 @@ type Querier interface {
 	//    $1, $2
 	//  )
 	//  ON CONFLICT (hash) DO NOTHING
-	//  RETURNING hash, created_at
+	//  RETURNING hash, written_at, created_at
 	InsertSchemaVersion(ctx context.Context, db DBTX, arg InsertSchemaVersionParams) (InsertSchemaVersionRow, error)
+	//InsertTuple
+	//
+	//  INSERT INTO "tuple" (
+	//    resource_type, resource_id, relation, subject_type, subject_id, subject_permission
+	//  ) VALUES (
+	//    $1, $2, $3, $4, $5, $6
+	//  )
+	//  ON CONFLICT (
+	//    resource_type, resource_id, relation,
+	//    subject_type, subject_id, subject_permission
+	//  ) DO NOTHING
+	//  RETURNING pk
+	InsertTuple(ctx context.Context, db DBTX, arg InsertTupleParams) (int64, error)
+	//IsXactVisible
+	//
+	//  SELECT pg_visible_in_snapshot($1::xid8, pg_current_snapshot())::boolean
+	IsXactVisible(ctx context.Context, db DBTX, xid types.XID8) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

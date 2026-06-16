@@ -38,7 +38,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - aegis_pg_data:/var/lib/postgresql/data
+      - aegis_pg_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d aegis"]
       interval: 5s

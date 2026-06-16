@@ -6,6 +6,7 @@ CREATE TABLE "schema" (
   pk         bigint        GENERATED ALWAYS AS IDENTITY,
   hash       "schema_hash" NOT NULL,
   data       bytea         NOT NULL,
+  written_at xid8          NOT NULL DEFAULT pg_current_xact_id(),
   created_at timestamptz   NOT NULL DEFAULT now(),
 
   CONSTRAINT schema_pk          PRIMARY KEY (pk),

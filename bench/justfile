@@ -1,0 +1,35 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# List available tasks
+default:
+    @just --justfile {{ justfile() }} --list
+
+# Start the benchmark environment (resource-bounded containers)
+up:
+    docker compose -f docker-compose.yaml up -d
+
+# Stop the benchmark environment
+down:
+    docker compose -f docker-compose.yaml down
+
+# Destroy all benchmark data, volumes, and artifacts
+nuke:
+    docker compose -f docker-compose.yaml down -v
+    rm -rf out/
+
+# Generate deterministic artifacts (tuples, checks, metadata)
+gen config="config.json" out="out/baseline":
+    mkdir -p {{ out }}
+    go run ./scripts/generate --output {{ out }} --config {{ config }}
+
+# Seed the database via gRPC with generated tuples
+seed input="out/baseline/tuples.csv":
+    go run ./scripts/seed --input {{ input }} --output $(dirname {{ input }})
+
+# Run Experiment A: Steady-State Latency Profile
+bench-latency rps="500" duration="60s" out="out/baseline":
+    CHECKS_PATH="../../{{ out }}/checks.jsonl" OUT_DIR="{{ out }}" RPS={{ rps }} DURATION={{ duration }} k6 run scripts/k6/checks.js
+
+# Run Experiment B: Thundering Herd Resilience
+bench-herd concurrency="100" out="out/baseline":
+    HERD_PATH="../../{{ out }}/herd_check.json" OUT_DIR="{{ out }}" CONCURRENCY={{ concurrency }} k6 run scripts/k6/herd.js

@@ -1,0 +1,50 @@
+server:
+  grpc:
+    port: "43615"
+  http:
+    enabled: true
+    port: "43614"
+
+profiler:
+  enabled: true
+  port: "6060"
+
+datastore:
+  engine: postgres
+  uri: postgresql://user:password@db:5432/aegis?sslmode=disable
+  auto_migrate: true
+  max_connections: 50
+  min_connections: 20
+  min_idle_connections: 20
+
+cache:
+  engine: memory
+  memory:
+    max_cost: 536870912 # 512MB memory limit (appropriate for a 2GB RAM container)
+    num_counters: 20000000
+    buffer_items: 64
+    default_ttl: 60s # Keeps cache stable during 60s benchmark runs
+
+engine:
+  max_depth: 50 # Allows testing deep folder chains up to 100 levels without overflow
+  expression_concurrency_limit: 8 # Reduced context switching overhead on 2 CPUs
+  traversal_concurrency_limit: 8 # Reduced context switching overhead on 2 CPUs
+  page_size: 1000
+
+authn:
+  enabled: true
+  method: psk
+  psk:
+    keys:
+      - aegis_XBHFNLxp9usfmbAuZtrD0Ajiace1HNfb/CpVLy3qcek=
+
+metrics:
+  enabled: true
+  exporter: prometheus
+
+logs:
+  enabled: true
+  level: info
+  format: json
+  exporters:
+    - type: stdout

@@ -5,12 +5,13 @@ INSERT INTO "schema" (
   @hash, @data
 )
 ON CONFLICT (hash) DO NOTHING
-RETURNING hash, created_at;
+RETURNING hash, written_at, created_at;
 
 -- name: GetLatestSchemaVersion :one
 SELECT
   s.hash,
   s.data,
+  s.written_at,
   s.created_at
 FROM "schema" s
 ORDER BY s.pk DESC
@@ -20,6 +21,7 @@ LIMIT 1;
 SELECT
   s.hash,
   s.data,
+  s.written_at,
   s.created_at
 FROM "schema" s
 WHERE s.hash = @hash;

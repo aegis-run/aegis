@@ -13,9 +13,12 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/aegis-run/aegis/internal/authn"
+	"github.com/aegis-run/aegis/internal/engine"
 	"github.com/aegis-run/aegis/pkg/telemetry"
 	"github.com/aegis-run/aegis/pkg/telemetry/logger"
 	"github.com/aegis-run/aegis/pkg/validator"
+	authzv1 "github.com/aegis-run/aegis/proto/aegis/authz/v1"
+	datav1 "github.com/aegis-run/aegis/proto/aegis/data/v1"
 	schemav1 "github.com/aegis-run/aegis/proto/aegis/schema/v1"
 )
 
@@ -30,6 +33,9 @@ type Dependencies struct {
 	Config    *Config
 	Validator validator.Validator
 	Schema    schemav1.SchemaServer
+	Data      datav1.DataServer
+	Authz     authzv1.AuthzServer
+	Engine    *engine.Engine
 }
 
 func NewGRPC(deps *Dependencies) (*GRPC, error) {
@@ -61,6 +67,12 @@ func NewGRPC(deps *Dependencies) (*GRPC, error) {
 	health.RegisterHealthServer(srv, hs)
 	if deps.Schema != nil {
 		schemav1.RegisterSchemaServer(srv, deps.Schema)
+	}
+	if deps.Data != nil {
+		datav1.RegisterDataServer(srv, deps.Data)
+	}
+	if deps.Authz != nil {
+		authzv1.RegisterAuthzServer(srv, deps.Authz)
 	}
 	reflection.Register(srv)
 

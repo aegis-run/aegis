@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/aegis-run/aegis/pkg/db/postgres/types"
 	"github.com/aegis-run/aegis/pkg/schema"
 )
 
@@ -16,6 +17,7 @@ const getLatestSchemaVersion = `-- name: GetLatestSchemaVersion :one
 SELECT
   s.hash,
   s.data,
+  s.written_at,
   s.created_at
 FROM "schema" s
 ORDER BY s.pk DESC
@@ -25,6 +27,7 @@ LIMIT 1
 type GetLatestSchemaVersionRow struct {
 	Hash      schema.Hash `db:"hash"`
 	Data      []byte      `db:"data"`
+	WrittenAt types.XID8  `db:"written_at"`
 	CreatedAt time.Time   `db:"created_at"`
 }
 
@@ -33,6 +36,7 @@ type GetLatestSchemaVersionRow struct {
 //	SELECT
 //	  s.hash,
 //	  s.data,
+//	  s.written_at,
 //	  s.created_at
 //	FROM "schema" s
 //	ORDER BY s.pk DESC
@@ -40,7 +44,7 @@ type GetLatestSchemaVersionRow struct {
 func (q *Queries) GetLatestSchemaVersion(ctx context.Context, db DBTX) (GetLatestSchemaVersionRow, error) {
 	row := db.QueryRow(ctx, getLatestSchemaVersion)
 	var i GetLatestSchemaVersionRow
-	err := row.Scan(&i.Hash, &i.Data, &i.CreatedAt)
+	err := row.Scan(&i.Hash, &i.Data, &i.WrittenAt, &i.CreatedAt)
 	return i, err
 }
 
@@ -48,6 +52,7 @@ const getSchemaVersionByHash = `-- name: GetSchemaVersionByHash :one
 SELECT
   s.hash,
   s.data,
+  s.written_at,
   s.created_at
 FROM "schema" s
 WHERE s.hash = $1
@@ -56,6 +61,7 @@ WHERE s.hash = $1
 type GetSchemaVersionByHashRow struct {
 	Hash      schema.Hash `db:"hash"`
 	Data      []byte      `db:"data"`
+	WrittenAt types.XID8  `db:"written_at"`
 	CreatedAt time.Time   `db:"created_at"`
 }
 
@@ -64,13 +70,14 @@ type GetSchemaVersionByHashRow struct {
 //	SELECT
 //	  s.hash,
 //	  s.data,
+//	  s.written_at,
 //	  s.created_at
 //	FROM "schema" s
 //	WHERE s.hash = $1
 func (q *Queries) GetSchemaVersionByHash(ctx context.Context, db DBTX, hash schema.Hash) (GetSchemaVersionByHashRow, error) {
 	row := db.QueryRow(ctx, getSchemaVersionByHash, hash)
 	var i GetSchemaVersionByHashRow
-	err := row.Scan(&i.Hash, &i.Data, &i.CreatedAt)
+	err := row.Scan(&i.Hash, &i.Data, &i.WrittenAt, &i.CreatedAt)
 	return i, err
 }
 
@@ -81,7 +88,7 @@ INSERT INTO "schema" (
   $1, $2
 )
 ON CONFLICT (hash) DO NOTHING
-RETURNING hash, created_at
+RETURNING hash, written_at, created_at
 `
 
 type InsertSchemaVersionParams struct {
@@ -91,6 +98,7 @@ type InsertSchemaVersionParams struct {
 
 type InsertSchemaVersionRow struct {
 	Hash      schema.Hash `db:"hash"`
+	WrittenAt types.XID8  `db:"written_at"`
 	CreatedAt time.Time   `db:"created_at"`
 }
 
@@ -102,10 +110,10 @@ type InsertSchemaVersionRow struct {
 //	  $1, $2
 //	)
 //	ON CONFLICT (hash) DO NOTHING
-//	RETURNING hash, created_at
+//	RETURNING hash, written_at, created_at
 func (q *Queries) InsertSchemaVersion(ctx context.Context, db DBTX, arg InsertSchemaVersionParams) (InsertSchemaVersionRow, error) {
 	row := db.QueryRow(ctx, insertSchemaVersion, arg.Hash, arg.Data)
 	var i InsertSchemaVersionRow
-	err := row.Scan(&i.Hash, &i.CreatedAt)
+	err := row.Scan(&i.Hash, &i.WrittenAt, &i.CreatedAt)
 	return i, err
 }

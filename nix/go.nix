@@ -15,7 +15,8 @@
 
       just
       hl-log-viewer
-      httpyac
+      bun
+      k6
     ];
 
     shellHook = ''

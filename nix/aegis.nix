@@ -9,7 +9,7 @@ pkgs.buildGoModule.override { inherit go; } {
   inherit version;
   src = pkgs.lib.cleanSource ../.;
 
-  vendorHash = "sha256-588/zfA5y2IZf7kSRqpUNkV9TkSQ4bPU+xReTORMIKw=";
+  vendorHash = "sha256-w69qsWbwpObFAJsFXDG8o7Ga1lO2ApOGGZ3nm8Aw0ZU=";
 
   ldflags = [
     "-s"

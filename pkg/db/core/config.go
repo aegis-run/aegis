@@ -29,6 +29,7 @@ type Config struct {
 	MaxConnectionLifetimeJitter time.Duration `mapstructure:"max_connection_lifetime_jitter"`
 	ConnectTimeout              time.Duration `mapstructure:"connect_timeout"`
 	MaxRetries                  int           `mapstructure:"max_retries"`
+	QuantizationWindow          time.Duration `mapstructure:"quantization_window"`
 }
 
 func DefaultConfig() Config {
@@ -44,6 +45,7 @@ func DefaultConfig() Config {
 		HealthCheckPeriod:           30 * time.Second,
 		ConnectTimeout:              5 * time.Second,
 		MaxRetries:                  3,
+		QuantizationWindow:          5 * time.Second,
 	}
 }
 
@@ -104,24 +106,94 @@ func (c Config) Validate() error {
 	return nil
 }
 
+func registerEngineAndConnFlags(fs *pflag.FlagSet, cfg *Config) {
+	fs.String(
+		"datastore.engine",
+		string(cfg.Engine),
+		"Database engine (memory or postgres)",
+	)
+	fs.Bool(
+		"datastore.auto_migrate",
+		cfg.AutoMigrate,
+		"Enable auto-migration",
+	)
+	fs.String(
+		"datastore.migrations_table",
+		cfg.MigrationsTable,
+		"Migrations table name",
+	)
+	fs.String(
+		"datastore.uri",
+		cfg.PrimaryURI,
+		"Primary database URI",
+	)
+	fs.String(
+		"datastore.readonly_uri",
+		cfg.ReadonlyURI,
+		"Read-only database URI",
+	)
+	fs.Int32(
+		"datastore.max_connections",
+		cfg.MaxConnections,
+		"Max database connections",
+	)
+	fs.Int32(
+		"datastore.min_connections",
+		cfg.MinConnections,
+		"Min database connections",
+	)
+	fs.Int32(
+		"datastore.min_idle_connections",
+		cfg.MinIdleConnections,
+		"Min idle database connections",
+	)
+}
+
+func registerLifetimeAndTimeoutFlags(fs *pflag.FlagSet, cfg *Config) {
+	fs.Duration(
+		"datastore.max_connection_lifetime",
+		cfg.MaxConnectionLifetime,
+		"Max database connection lifetime",
+	)
+	fs.Duration(
+		"datastore.max_connection_idle_time",
+		cfg.MaxConnectionIdleTime,
+		"Max database connection idle time",
+	)
+	fs.Duration(
+		"datastore.health_check_period",
+		cfg.HealthCheckPeriod,
+		"Database health check period",
+	)
+	fs.Duration(
+		"datastore.max_connection_lifetime_jitter",
+		cfg.MaxConnectionLifetimeJitter,
+		"Max database connection lifetime jitter",
+	)
+	fs.Duration(
+		"datastore.connect_timeout",
+		cfg.ConnectTimeout,
+		"Database connection timeout",
+	)
+	fs.Int(
+		"datastore.max_retries",
+		cfg.MaxRetries,
+		"Max database operation retries",
+	)
+
+	fs.Duration(
+		"datastore.quantization_window",
+		cfg.QuantizationWindow,
+		"Quantization window",
+	)
+}
+
 func Flags() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("datastore", pflag.ExitOnError)
 
 	cfg := DefaultConfig()
-	fs.String("datastore.engine", string(cfg.Engine), "Database engine (memory or postgres)")
-	fs.Bool("datastore.auto_migrate", cfg.AutoMigrate, "Enable auto-migration")
-	fs.String("datastore.migrations_table", cfg.MigrationsTable, "Migrations table name")
-	fs.String("datastore.uri", cfg.PrimaryURI, "Primary database URI")
-	fs.String("datastore.readonly_uri", cfg.ReadonlyURI, "Read-only database URI")
-	fs.Int32("datastore.max_connections", cfg.MaxConnections, "Max database connections")
-	fs.Int32("datastore.min_connections", cfg.MinConnections, "Min database connections")
-	fs.Int32("datastore.min_idle_connections", cfg.MinIdleConnections, "Min idle database connections")
-	fs.Duration("datastore.max_connection_lifetime", cfg.MaxConnectionLifetime, "Max database connection lifetime")
-	fs.Duration("datastore.max_connection_idle_time", cfg.MaxConnectionIdleTime, "Max database connection idle time")
-	fs.Duration("datastore.health_check_period", cfg.HealthCheckPeriod, "Database health check period")
-	fs.Duration("datastore.max_connection_lifetime_jitter", cfg.MaxConnectionLifetimeJitter, "Max database connection lifetime jitter")
-	fs.Duration("datastore.connect_timeout", cfg.ConnectTimeout, "Database connection timeout")
-	fs.Int("datastore.max_retries", cfg.MaxRetries, "Max database operation retries")
+	registerEngineAndConnFlags(fs, &cfg)
+	registerLifetimeAndTimeoutFlags(fs, &cfg)
 
 	return fs
 }

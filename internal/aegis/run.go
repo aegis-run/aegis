@@ -9,7 +9,13 @@ import (
 	"github.com/aegis-run/aegis/internal"
 	"github.com/aegis-run/aegis/internal/aegis/config"
 	"github.com/aegis-run/aegis/internal/authn"
+	"github.com/aegis-run/aegis/internal/authz"
+	"github.com/aegis-run/aegis/internal/data"
 	"github.com/aegis-run/aegis/internal/datalayer"
+	"github.com/aegis-run/aegis/internal/dispatch/caching"
+	"github.com/aegis-run/aegis/internal/dispatch/singleflight"
+	"github.com/aegis-run/aegis/internal/engine"
+	"github.com/aegis-run/aegis/internal/engine/loader"
 	"github.com/aegis-run/aegis/internal/schema"
 	"github.com/aegis-run/aegis/internal/servers"
 	"github.com/aegis-run/aegis/pkg/db"
@@ -60,12 +66,25 @@ func configureDeps(
 	database := must.NotError(db.New(ctx, &cfg.Datastore))
 	rt.Defer(database.Close)
 
-	dl := must.NotError(datalayer.New(database))
+	dl := must.NotError(datalayer.New(ctx, database, cfg.Datastore))
+
+	schemaCache := must.NotError(loader.NewCache(&cfg.Cache))
+	schemaLoader := loader.NewSchema(dl.Schema, schemaCache)
+
+	dispatchCache := must.NotError(caching.NewCache(&cfg.Cache))
+
+	eng := engine.New(schemaLoader, &cfg.Engine,
+		caching.WithCaching(dispatchCache, cfg.Cache.Memory.DefaultTTL),
+		singleflight.WithSingleflight(),
+	)
 
 	deps := &servers.Dependencies{
 		Config:    &cfg.Server,
 		Validator: must.NotError(validator.New()),
-		Schema:    schema.NewAPI(dl.Schema),
+		Schema:    schema.NewAPI(dl),
+		Data:      data.NewAPI(dl),
+		Authz:     authz.NewAPI(eng, dl),
+		Engine:    eng,
 	}
 
 	if cfg.Authn.Enabled {

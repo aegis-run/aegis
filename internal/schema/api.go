@@ -2,7 +2,6 @@ package schema
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/aegis-run/aegis/internal/datalayer"
 	dlerr "github.com/aegis-run/aegis/internal/datalayer/error"
+	"github.com/aegis-run/aegis/pkg/consistency"
 	"github.com/aegis-run/aegis/pkg/schema"
 	"github.com/aegis-run/aegis/pkg/telemetry"
 	schemav1 "github.com/aegis-run/aegis/proto/aegis/schema/v1"
@@ -19,11 +19,15 @@ import (
 type API struct {
 	schemav1.UnimplementedSchemaServer
 
-	store datalayer.Schema
+	schema      datalayer.Schema
+	consistency datalayer.Consistency
 }
 
-func NewAPI(store datalayer.Schema) *API {
-	return &API{store: store}
+func NewAPI(dl *datalayer.DataLayer) *API {
+	return &API{
+		schema:      dl.Schema,
+		consistency: dl.Consistency,
+	}
 }
 
 func (api *API) Write(
@@ -38,7 +42,7 @@ func (api *API) Write(
 		return nil, status.Errorf(codes.InvalidArgument, "invalid schema payload: %v", err)
 	}
 
-	version, err := api.store.Write(ctx, payload)
+	version, token, err := api.schema.Write(ctx, payload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to write schema version: %v", err)
 	}
@@ -46,7 +50,8 @@ func (api *API) Write(
 	telemetry.Attr(ctx, attribute.String("schema.hash", version.Hash.Hex()))
 
 	return &schemav1.WriteResponse{
-		Hash: &schemav1.SchemaHash{Digest: version.Hash.Digest()},
+		Hash:      &schemav1.SchemaHash{Digest: version.Hash.Digest()},
+		WrittenAt: consistency.Encode(token),
 	}, nil
 }
 
@@ -57,9 +62,17 @@ func (api *API) Read(
 	ctx, span := telemetry.Start(ctx, "schema.api.read")
 	defer telemetry.End(span, &err)
 
+	// Resolve the consistency requirement to determine RO vs RW routing.
+	// The token itself is not passed into the schema datalayer — it only controls
+	// which replica is used. Schema rows are not xid-visibility-gated.
+	requirement := consistency.DecodeRequirement(req.GetConsistency())
+	if _, err = api.consistency.Resolve(ctx, requirement); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid consistency requirement: %v", err)
+	}
+
 	version, err := api.readVersion(ctx, req)
 	if err != nil {
-		if errors.Is(err, dlerr.ErrNotFound) {
+		if dlerr.IsNotFound(err) {
 			return nil, status.Error(codes.NotFound, "schema version not found")
 		}
 		return nil, status.Errorf(
@@ -81,8 +94,9 @@ func (api *API) Read(
 	}
 
 	return &schemav1.ReadResponse{
-		Schema: sch,
-		Hash:   &schemav1.SchemaHash{Digest: version.Hash.Digest()},
+		Schema:    sch,
+		Hash:      &schemav1.SchemaHash{Digest: version.Hash.Digest()},
+		WrittenAt: consistency.Encode(version.WrittenAt),
 	}, nil
 }
 
@@ -91,7 +105,7 @@ func (api *API) readVersion(
 	req *schemav1.ReadRequest,
 ) (schema.Version, error) {
 	if req.GetHash() == nil {
-		return api.store.ReadLatest(ctx)
+		return api.schema.ReadLatest(ctx)
 	}
 
 	hash, err := schema.ParseHashDigest(req.GetHash().GetDigest())
@@ -101,5 +115,5 @@ func (api *API) readVersion(
 
 	telemetry.Attr(ctx, attribute.String("schema.requested_hash", hash.Hex()))
 
-	return api.store.ReadByHash(ctx, hash)
+	return api.schema.ReadByHash(ctx, hash)
 }

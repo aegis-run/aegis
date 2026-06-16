@@ -1,5 +1,5 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set dotenv-load := true
+set dotenv-load
 
 [private]
 default:
@@ -73,7 +73,7 @@ gen:
 # Database                                                           #
 # ------------------------------------------------------------------ #
 
-db_dir := "pkg/database/postgres/migrations"
+db_dir := "pkg/db/postgres/migrations"
 db_url := env("AEGIS_DB_URI", "postgres://user:password@localhost:5432/aegis?sslmode=disable")
 db_schema := env("AEGIS_DB_SCHEMA_NAME", "public")
 db_table := env("AEGIS_DB_MIGRATIONS_TABLE", "aegis_schema_migrations")

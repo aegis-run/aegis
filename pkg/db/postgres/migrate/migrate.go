@@ -13,10 +13,6 @@ import (
 	"github.com/aegis-run/aegis/pkg/telemetry/logger"
 )
 
-const (
-	dialect = "postgres"
-)
-
 var gooseLogger *slog.Logger
 
 // SetLogger sets the logger used by migrations. If nil, slog.Default() is used.

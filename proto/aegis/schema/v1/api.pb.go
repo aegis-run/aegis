@@ -123,7 +123,10 @@ func (x *WriteRequest) GetSchema() *v1.Schema {
 type WriteResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Content-addressed revision token for this schema version.
-	Hash          *SchemaHash `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	Hash *SchemaHash `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	// Consistency token representing the datastore revision at the time of write.
+	// Pass to subsequent reads to enforce causal consistency.
+	WrittenAt     *v1.ConsistencyToken `protobuf:"bytes,2,opt,name=written_at,json=writtenAt,proto3" json:"written_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -161,6 +164,13 @@ func (*WriteResponse) Descriptor() ([]byte, []int) {
 func (x *WriteResponse) GetHash() *SchemaHash {
 	if x != nil {
 		return x.Hash
+	}
+	return nil
+}
+
+func (x *WriteResponse) GetWrittenAt() *v1.ConsistencyToken {
+	if x != nil {
+		return x.WrittenAt
 	}
 	return nil
 }
@@ -229,7 +239,10 @@ type ReadResponse struct {
 	// The structured schema IR, ready for consumption by the evaluation engine.
 	Schema *v1.Schema `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
 	// Revision token of this schema version.
-	Hash          *SchemaHash `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+	Hash *SchemaHash `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+	// Consistency token representing the datastore revision at the time of write.
+	// Pass to subsequent reads to enforce causal consistency.
+	WrittenAt     *v1.ConsistencyToken `protobuf:"bytes,3,opt,name=written_at,json=writtenAt,proto3" json:"written_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -278,6 +291,13 @@ func (x *ReadResponse) GetHash() *SchemaHash {
 	return nil
 }
 
+func (x *ReadResponse) GetWrittenAt() *v1.ConsistencyToken {
+	if x != nil {
+		return x.WrittenAt
+	}
+	return nil
+}
+
 var File_aegis_schema_v1_api_proto protoreflect.FileDescriptor
 
 const file_aegis_schema_v1_api_proto_rawDesc = "" +
@@ -287,17 +307,21 @@ const file_aegis_schema_v1_api_proto_rawDesc = "" +
 	"SchemaHash\x128\n" +
 	"\x06digest\x18\x01 \x01(\tB \xbaH\x1dr\x1b2\x16^[A-Za-z0-9+/_-]{43}=$\x98\x01,R\x06digest\"@\n" +
 	"\fWriteRequest\x120\n" +
-	"\x06schema\x18\x01 \x01(\v2\x10.aegis.v1.SchemaB\x06\xbaH\x03\xc8\x01\x01R\x06schema\"@\n" +
+	"\x06schema\x18\x01 \x01(\v2\x10.aegis.v1.SchemaB\x06\xbaH\x03\xc8\x01\x01R\x06schema\"{\n" +
 	"\rWriteResponse\x12/\n" +
-	"\x04hash\x18\x01 \x01(\v2\x1b.aegis.schema.v1.SchemaHashR\x04hash\"\x9a\x01\n" +
+	"\x04hash\x18\x01 \x01(\v2\x1b.aegis.schema.v1.SchemaHashR\x04hash\x129\n" +
+	"\n" +
+	"written_at\x18\x02 \x01(\v2\x1a.aegis.v1.ConsistencyTokenR\twrittenAt\"\x9a\x01\n" +
 	"\vReadRequest\x124\n" +
 	"\x04hash\x18\x01 \x01(\v2\x1b.aegis.schema.v1.SchemaHashH\x00R\x04hash\x88\x01\x01\x12<\n" +
 	"\vconsistency\x18\x02 \x01(\v2\x15.aegis.v1.ConsistencyH\x01R\vconsistency\x88\x01\x01B\a\n" +
 	"\x05_hashB\x0e\n" +
-	"\f_consistency\"i\n" +
+	"\f_consistency\"\xa4\x01\n" +
 	"\fReadResponse\x12(\n" +
 	"\x06schema\x18\x01 \x01(\v2\x10.aegis.v1.SchemaR\x06schema\x12/\n" +
-	"\x04hash\x18\x02 \x01(\v2\x1b.aegis.schema.v1.SchemaHashR\x04hash2\xcb\x01\n" +
+	"\x04hash\x18\x02 \x01(\v2\x1b.aegis.schema.v1.SchemaHashR\x04hash\x129\n" +
+	"\n" +
+	"written_at\x18\x03 \x01(\v2\x1a.aegis.v1.ConsistencyTokenR\twrittenAt2\xcb\x01\n" +
 	"\x06Schema\x12\\\n" +
 	"\x04Read\x12\x1c.aegis.schema.v1.ReadRequest\x1a\x1d.aegis.schema.v1.ReadResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/v1/schema/read\x12c\n" +
 	"\x05Write\x12\x1d.aegis.schema.v1.WriteRequest\x1a\x1e.aegis.schema.v1.WriteResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/schema/writeB2Z0github.com/aegis-run/aegis/proto/aegis/schema/v1b\x06proto3"
@@ -316,30 +340,33 @@ func file_aegis_schema_v1_api_proto_rawDescGZIP() []byte {
 
 var file_aegis_schema_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_aegis_schema_v1_api_proto_goTypes = []any{
-	(*SchemaHash)(nil),     // 0: aegis.schema.v1.SchemaHash
-	(*WriteRequest)(nil),   // 1: aegis.schema.v1.WriteRequest
-	(*WriteResponse)(nil),  // 2: aegis.schema.v1.WriteResponse
-	(*ReadRequest)(nil),    // 3: aegis.schema.v1.ReadRequest
-	(*ReadResponse)(nil),   // 4: aegis.schema.v1.ReadResponse
-	(*v1.Schema)(nil),      // 5: aegis.v1.Schema
-	(*v1.Consistency)(nil), // 6: aegis.v1.Consistency
+	(*SchemaHash)(nil),          // 0: aegis.schema.v1.SchemaHash
+	(*WriteRequest)(nil),        // 1: aegis.schema.v1.WriteRequest
+	(*WriteResponse)(nil),       // 2: aegis.schema.v1.WriteResponse
+	(*ReadRequest)(nil),         // 3: aegis.schema.v1.ReadRequest
+	(*ReadResponse)(nil),        // 4: aegis.schema.v1.ReadResponse
+	(*v1.Schema)(nil),           // 5: aegis.v1.Schema
+	(*v1.ConsistencyToken)(nil), // 6: aegis.v1.ConsistencyToken
+	(*v1.Consistency)(nil),      // 7: aegis.v1.Consistency
 }
 var file_aegis_schema_v1_api_proto_depIdxs = []int32{
-	5, // 0: aegis.schema.v1.WriteRequest.schema:type_name -> aegis.v1.Schema
-	0, // 1: aegis.schema.v1.WriteResponse.hash:type_name -> aegis.schema.v1.SchemaHash
-	0, // 2: aegis.schema.v1.ReadRequest.hash:type_name -> aegis.schema.v1.SchemaHash
-	6, // 3: aegis.schema.v1.ReadRequest.consistency:type_name -> aegis.v1.Consistency
-	5, // 4: aegis.schema.v1.ReadResponse.schema:type_name -> aegis.v1.Schema
-	0, // 5: aegis.schema.v1.ReadResponse.hash:type_name -> aegis.schema.v1.SchemaHash
-	3, // 6: aegis.schema.v1.Schema.Read:input_type -> aegis.schema.v1.ReadRequest
-	1, // 7: aegis.schema.v1.Schema.Write:input_type -> aegis.schema.v1.WriteRequest
-	4, // 8: aegis.schema.v1.Schema.Read:output_type -> aegis.schema.v1.ReadResponse
-	2, // 9: aegis.schema.v1.Schema.Write:output_type -> aegis.schema.v1.WriteResponse
-	8, // [8:10] is the sub-list for method output_type
-	6, // [6:8] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	5,  // 0: aegis.schema.v1.WriteRequest.schema:type_name -> aegis.v1.Schema
+	0,  // 1: aegis.schema.v1.WriteResponse.hash:type_name -> aegis.schema.v1.SchemaHash
+	6,  // 2: aegis.schema.v1.WriteResponse.written_at:type_name -> aegis.v1.ConsistencyToken
+	0,  // 3: aegis.schema.v1.ReadRequest.hash:type_name -> aegis.schema.v1.SchemaHash
+	7,  // 4: aegis.schema.v1.ReadRequest.consistency:type_name -> aegis.v1.Consistency
+	5,  // 5: aegis.schema.v1.ReadResponse.schema:type_name -> aegis.v1.Schema
+	0,  // 6: aegis.schema.v1.ReadResponse.hash:type_name -> aegis.schema.v1.SchemaHash
+	6,  // 7: aegis.schema.v1.ReadResponse.written_at:type_name -> aegis.v1.ConsistencyToken
+	3,  // 8: aegis.schema.v1.Schema.Read:input_type -> aegis.schema.v1.ReadRequest
+	1,  // 9: aegis.schema.v1.Schema.Write:input_type -> aegis.schema.v1.WriteRequest
+	4,  // 10: aegis.schema.v1.Schema.Read:output_type -> aegis.schema.v1.ReadResponse
+	2,  // 11: aegis.schema.v1.Schema.Write:output_type -> aegis.schema.v1.WriteResponse
+	10, // [10:12] is the sub-list for method output_type
+	8,  // [8:10] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_aegis_schema_v1_api_proto_init() }

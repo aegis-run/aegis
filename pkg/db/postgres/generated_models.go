@@ -7,6 +7,7 @@ package postgres
 import (
 	"time"
 
+	"github.com/aegis-run/aegis/pkg/db/postgres/types"
 	"github.com/aegis-run/aegis/pkg/schema"
 )
 
@@ -14,5 +15,16 @@ type Schema struct {
 	Pk        int64       `db:"pk"`
 	Hash      schema.Hash `db:"hash"`
 	Data      []byte      `db:"data"`
+	WrittenAt types.XID8  `db:"written_at"`
 	CreatedAt time.Time   `db:"created_at"`
+}
+
+type Tuple struct {
+	Pk                int64  `db:"pk"`
+	ResourceType      string `db:"resource_type"`
+	ResourceID        string `db:"resource_id"`
+	Relation          string `db:"relation"`
+	SubjectType       string `db:"subject_type"`
+	SubjectID         string `db:"subject_id"`
+	SubjectPermission string `db:"subject_permission"`
 }

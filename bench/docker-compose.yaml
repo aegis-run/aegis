@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: aegis
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d aegis"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  aegis:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: aegis:bench
+    ports:
+      - "43615:43615" # gRPC
+      - "43614:43614" # HTTP
+      - "6060:6060" # Pprof
+    volumes:
+      - ./config/aegis.yaml:/etc/aegis/aegis.yaml
+    environment:
+      AEGIS_DATASTORE_URI: postgresql://user:password@db:5432/aegis?sslmode=disable
+    command: ["serve", "--config", "/etc/aegis/aegis.yaml"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  default:
+    name: aegis_bench

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -65,9 +67,16 @@ func NewHTTP(cfg *Config) (*HTTP, error) {
 	}
 
 	mux := runtime.NewServeMux(muxOpts...)
+
+	httpMux := http.NewServeMux()
+	httpMux.Handle("/", mux)
+	httpMux.Handle("/metrics", promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+		EnableOpenMetrics: true,
+	}))
+
 	srv := &http.Server{
 		Addr:              net.JoinHostPort(cfg.Host, cfg.HTTP.Port),
-		Handler:           injectWideEvent(mux),
+		Handler:           injectWideEvent(httpMux),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

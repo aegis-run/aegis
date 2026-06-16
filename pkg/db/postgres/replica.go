@@ -38,7 +38,7 @@ func (r *Replica) Exec(ctx context.Context, query string, args ...any) (pgconn.C
 
 	start := time.Now()
 	res, err := r.pool.Exec(ctx, query, args...)
-	r.observe(ctx, span, "Exec", start, err)
+	observe(ctx, span, r.mode, "Exec", start, err)
 
 	return res, err
 }
@@ -52,7 +52,7 @@ func (r *Replica) Query(ctx context.Context, query string, args ...any) (pgx.Row
 
 	start := time.Now()
 	res, err := r.pool.Query(ctx, query, args...)
-	r.observe(ctx, span, "Query", start, err)
+	observe(ctx, span, r.mode, "Query", start, err)
 
 	return res, err
 }
@@ -66,14 +66,15 @@ func (r *Replica) QueryRow(ctx context.Context, query string, args ...any) pgx.R
 
 	start := time.Now()
 	res := r.pool.QueryRow(ctx, query, args...)
-	r.observe(ctx, span, "QueryRow", start, nil)
+	observe(ctx, span, r.mode, "QueryRow", start, nil)
 
 	return res
 }
 
-func (r *Replica) observe(
+func observe(
 	ctx context.Context,
 	span trace.Span,
+	mode string,
 	op string,
 	start time.Time,
 	err error,
@@ -86,7 +87,7 @@ func (r *Replica) observe(
 	}
 
 	attrs := metric.WithAttributes(
-		attribute.String("replica", r.mode),
+		attribute.String("replica", mode),
 		attribute.String("operation", op),
 		attribute.String("status", status),
 	)

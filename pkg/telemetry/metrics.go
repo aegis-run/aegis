@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"google.golang.org/grpc/credentials"
 
@@ -36,22 +37,30 @@ func ConfigureMetrics(ctx context.Context, cfg *Metrics) (func(context.Context) 
 			return noopShutdown(), err
 		}
 
-		return newMeter(exp, cfg.Interval), nil
+		reader := metric.NewPeriodicReader(exp, metric.WithInterval(cfg.Interval))
+
+		return newMeter(reader), nil
+
+	case "prometheus":
+		reader, err := prometheus.New()
+		if err != nil {
+			return noopShutdown(), err
+		}
+		return newMeter(reader), nil
+
 	default:
 		return noopShutdown(), fmt.Errorf("%s metrics exporter is unsupported", cfg.Exporter)
 	}
 }
 
-func newMeter(exporter metric.Exporter, interval time.Duration) func(context.Context) error {
+func newMeter(reader metric.Reader) func(context.Context) error {
 	res, err := aegisResource()
 	if err != nil {
 		return noopShutdown()
 	}
 
 	mp := metric.NewMeterProvider(
-		metric.WithReader(
-			metric.NewPeriodicReader(exporter, metric.WithInterval(interval)),
-		),
+		metric.WithReader(reader),
 		metric.WithResource(res),
 	)
 

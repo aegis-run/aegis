@@ -1,6 +1,7 @@
 package datalayer
 
 import (
+	"context"
 	"fmt"
 
 	dlpostgres "github.com/aegis-run/aegis/internal/datalayer/impl/postgres"
@@ -9,18 +10,23 @@ import (
 )
 
 type DataLayer struct {
-	Schema Schema
+	Schema      Schema
+	Mutator     Mutator
+	Consistency Consistency
 }
 
-func New(database db.DB) (*DataLayer, error) {
+func New(ctx context.Context, database db.DB, cfg db.Config) (*DataLayer, error) {
 	switch database.Engine() {
 	case string(db.POSTGRES):
 		db, ok := database.(postgres.DB)
 		if !ok {
 			return nil, fmt.Errorf("database is not a postgres DB")
 		}
+
 		return &DataLayer{
-			Schema: dlpostgres.NewSchema(db),
+			Schema:      dlpostgres.NewSchema(db),
+			Mutator:     dlpostgres.NewTuples(db),
+			Consistency: dlpostgres.NewConsistency(ctx, db, cfg.QuantizationWindow),
 		}, nil
 	case string(db.MEMORY):
 		return nil, fmt.Errorf("in-memory datalayer not implemented yet")

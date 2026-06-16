@@ -1,0 +1,31 @@
+{
+  "seed": [42, 0],
+  "distribution": { "zipf_s": 1.3, "zipf_v": 1.0 },
+  "model": {
+    "deep_chain_depth": 20,
+    "users": { "dimension": 1000 },
+    "groups": {
+      "dimension": 20,
+      "members": { "min": 2, "max": 12 }
+    },
+    "organizations": {
+      "dimension": 5,
+      "admins": { "min": 2, "max": 4 },
+      "members": { "min": 5, "max": 25 }
+    },
+    "directories": {
+      "dimension": 200,
+      "editors": { "min": 1, "max": 4 },
+      "parent_dir_prob": 0.4,
+      "viewers": { "min": 1, "max": 6, "is_user_prob": 0.7 }
+    },
+    "documents": {
+      "dimension": 1000,
+      "commenters": { "min": 1, "max": 6, "is_user_prob": 0.6 }
+    }
+  },
+  "workload": {
+    "checks": 10000,
+    "allowed_ratio": 0.7
+  }
+}
